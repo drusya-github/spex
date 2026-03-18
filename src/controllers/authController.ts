@@ -1,17 +1,17 @@
 import { Request, Response } from 'express';
+import { registerUserService } from '../services/authService';
 
 export const registerUser = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { name, email } = req.body;
+    const { email, password } = req.body;
+
+    const user = await registerUserService({ email, password });
 
     res.status(201).json({
       success: true,
       message: 'User registered successfully',
       data: {
-        user: {
-          name,
-          email,
-        },
+        user,
       },
     });
   } catch (error) {
