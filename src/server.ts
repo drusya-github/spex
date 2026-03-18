@@ -1,15 +1,7 @@
-import express from 'express';
-import { env } from './config/env';
+import app from './app';
 
-const app = express();
+const PORT = process.env.PORT || 3000;
 
-app.get('/health', (_req, res) => {
-  res.status(200).json({
-    success: true,
-    message: 'Server is running'
-  });
-});
-
-app.listen(env.PORT, () => {
-  console.log(`Server running on port ${env.PORT} in ${env.NODE_ENV} mode`);
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
 });
