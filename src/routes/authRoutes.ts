@@ -1,19 +1,11 @@
-import { Router, Request, Response } from 'express';
-import { login } from '../controllers/authController';
-import { protect } from '../middleware/authMiddleware';
+import { Router } from 'express';
+import { register, login, getCurrentUser } from '../controllers/authController';
+import authMiddleware from '../middleware/authMiddleware';
 
 const router = Router();
 
+router.post('/register', register);
 router.post('/login', login);
-
-router.get('/me', protect, (req: Request, res: Response) => {
-  res.status(200).json({
-    success: true,
-    message: 'Authenticated user fetched successfully',
-    data: {
-      user: req.user,
-    },
-  });
-});
+router.get('/me', authMiddleware, getCurrentUser);
 
 export default router;

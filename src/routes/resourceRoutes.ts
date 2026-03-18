@@ -1,9 +1,13 @@
 import { Router } from 'express';
-import { create } from '../controllers/resourceController';
-import { protect } from '../middleware/authMiddleware';
+import {
+  createResource,
+  getResources,
+} from '../controllers/resourceController';
+import authMiddleware from '../middleware/authMiddleware';
 
 const router = Router();
 
-router.post('/', protect, create);
+router.post('/', authMiddleware, createResource);
+router.get('/', authMiddleware, getResources);
 
 export default router;

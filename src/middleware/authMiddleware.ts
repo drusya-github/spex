@@ -1,39 +1,30 @@
-import { NextFunction, Request, Response } from 'express';
-import jwt, { JwtPayload } from 'jsonwebtoken';
+import { Request, Response, NextFunction } from 'express';
+import jwt from 'jsonwebtoken';
 
-interface AuthTokenPayload extends JwtPayload {
-  userId: string;
-  email: string;
-}
-
-export const protect = (
+const authMiddleware = (
   req: Request,
   res: Response,
   next: NextFunction
 ): void => {
-  const authHeader = req.headers.authorization;
-
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    res.status(401).json({
-      success: false,
-      message: 'Unauthorized',
-    });
-    return;
-  }
-
-  const token = authHeader.split(' ')[1];
-
   try {
-    const decoded = jwt.verify(
-      token,
-      process.env.JWT_SECRET as jwt.Secret
-    ) as AuthTokenPayload;
+    const authHeader = req.headers.authorization;
 
-    req.user = {
-      userId: decoded.userId,
-      email: decoded.email,
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      res.status(401).json({
+        success: false,
+        message: 'Unauthorized',
+      });
+      return;
+    }
+
+    const token = authHeader.split(' ')[1];
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as {
+      userId: string;
+      email: string;
     };
 
+    req.user = decoded;
     next();
   } catch (error) {
     res.status(401).json({
@@ -42,3 +33,5 @@ export const protect = (
     });
   }
 };
+
+export default authMiddleware;
