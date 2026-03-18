@@ -1,15 +1,14 @@
-class AppError extends Error {
-  public statusCode: number;
-  public isOperational: boolean;
+export class AppError extends Error {
+  statusCode: number;
+  code: string;
+  details?: unknown;
 
-  constructor(message: string, statusCode: number) {
+  constructor(message: string, statusCode = 500, code = 'ERROR', details?: unknown) {
     super(message);
     this.statusCode = statusCode;
-    this.isOperational = true;
+    this.code = code;
+    this.details = details;
 
     Object.setPrototypeOf(this, AppError.prototype);
-    Error.captureStackTrace(this);
   }
 }
-
-export default AppError;

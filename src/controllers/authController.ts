@@ -1,5 +1,6 @@
 import { NextFunction, Request, Response } from 'express';
-import { loginUser, registerUser } from '../services/authService';
+import { registerUser, loginUser } from '../services/authService';
+import { sendSuccess } from '../utils/response';
 
 export const register = async (
   req: Request,
@@ -8,14 +9,7 @@ export const register = async (
 ): Promise<void> => {
   try {
     const user = await registerUser(req.body);
-
-    res.status(201).json({
-      success: true,
-      message: 'User registered successfully',
-      data: {
-        user,
-      },
-    });
+    sendSuccess(res, 201, 'User registered successfully', { user });
   } catch (error) {
     next(error);
   }
@@ -28,32 +22,7 @@ export const login = async (
 ): Promise<void> => {
   try {
     const result = await loginUser(req.body);
-
-    res.status(200).json({
-      success: true,
-      message: 'Login successful',
-      data: result,
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
-export const getCurrentUser = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> => {
-  try {
-    const user = (req as any).user;
-
-    res.status(200).json({
-      success: true,
-      message: 'Current user fetched successfully',
-      data: {
-        user,
-      },
-    });
+    sendSuccess(res, 200, 'Login successful', result);
   } catch (error) {
     next(error);
   }

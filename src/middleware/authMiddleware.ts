@@ -1,49 +1,39 @@
 import { NextFunction, Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
-import AppError from '../utils/AppError';
+import { AppError } from '../utils/AppError';
 
-interface AuthenticatedRequest extends Request {
-  user?: {
-    userId: string;
-    email: string;
-  };
+interface JwtPayload {
+  userId: string;
+  email: string;
 }
 
-const authMiddleware = (
-  req: AuthenticatedRequest,
-  _res: Response,
-  next: NextFunction
-): void => {
-  try {
-    const authHeader = req.headers.authorization;
-
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      throw new AppError('Unauthorized', 401);
+declare global {
+  namespace Express {
+    interface Request {
+      user?: JwtPayload;
     }
+  }
+}
 
-    const token = authHeader.split(' ')[1];
+const authMiddleware = (req: Request, _res: Response, next: NextFunction): void => {
+  const authHeader = req.headers.authorization;
 
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return next(new AppError('Unauthorized', 401, 'UNAUTHORIZED'));
+  }
+
+  const token = authHeader.split(' ')[1];
+
+  try {
     const decoded = jwt.verify(
       token,
-      process.env.JWT_SECRET as jwt.Secret
-    ) as {
-      userId: string;
-      email: string;
-    };
+      process.env.JWT_SECRET || ''
+    ) as JwtPayload;
 
-    req.user = {
-      userId: decoded.userId,
-      email: decoded.email,
-    };
-
+    req.user = decoded;
     next();
-  } catch (error) {
-    if (error instanceof AppError) {
-      next(error);
-      return;
-    }
-
-    next(new AppError('Unauthorized', 401));
+  } catch (_error) {
+    return next(new AppError('Invalid or expired token', 401, 'INVALID_TOKEN'));
   }
 };
 

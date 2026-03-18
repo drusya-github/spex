@@ -1,39 +1,29 @@
 import { NextFunction, Request, Response } from 'express';
-import AppError from '../utils/AppError';
+import { AppError } from '../utils/AppError';
+import { sendError } from '../utils/response';
 
 const errorHandler = (
-  err: any,
+  err: Error,
   _req: Request,
   res: Response,
   _next: NextFunction
-): void => {
-  if (
-  err instanceof SyntaxError &&
-  'status' in err &&
-  err.status === 400 &&
-  'body' in err
-) {
-  res.status(400).json({
-    success: false,
-    message: 'Invalid JSON payload',
-  });
-  return;
-}
-
+): Response => {
   if (err instanceof AppError) {
-    res.status(err.statusCode).json({
-      success: false,
-      message: err.message,
-    });
-    return;
+    return sendError(
+      res,
+      err.statusCode,
+      err.message,
+      err.code,
+      err.details
+    );
   }
 
-  console.error(err);
-
-  res.status(500).json({
-    success: false,
-    message: 'Internal server error',
-  });
+  return sendError(
+    res,
+    500,
+    'Internal server error',
+    'INTERNAL_SERVER_ERROR'
+  );
 };
 
 export default errorHandler;

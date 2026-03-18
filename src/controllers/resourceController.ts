@@ -1,26 +1,21 @@
 import { NextFunction, Request, Response } from 'express';
-import { createResource as createResourceService } from '../services/resourceService';
+import { createResource } from '../services/resourceService';
+import { sendSuccess } from '../utils/response';
 
-export const createResource = async (
+export const create = async (
   req: Request,
   res: Response,
   next: NextFunction
 ): Promise<void> => {
   try {
-    const userId = (req as any).user?.userId;
-
-    const resource = await createResourceService({
-      userId,
-      ...req.body,
+    const user = req.user as { userId: string };
+    const resource = await createResource({
+      userId: user.userId,
+      title: req.body.title,
+      content: req.body.content,
     });
 
-    res.status(201).json({
-      success: true,
-      message: 'Resource created successfully',
-      data: {
-        resource,
-      },
-    });
+    sendSuccess(res, 201, 'Resource created successfully', { resource });
   } catch (error) {
     next(error);
   }
