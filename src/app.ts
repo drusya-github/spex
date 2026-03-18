@@ -1,5 +1,6 @@
 import express, { Request, Response } from 'express';
 import requestLogger from './middleware/requestLogger';
+import authRoutes from './routes/authRoutes';
 
 const app = express();
 
@@ -15,5 +16,7 @@ app.get('/health', (_req: Request, res: Response) => {
     message: 'Server is running',
   });
 });
+
+app.use('/api/auth', authRoutes);
 
 export default app;
