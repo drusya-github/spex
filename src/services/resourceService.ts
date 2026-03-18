@@ -12,7 +12,7 @@ export const createResource = async ({
   content,
   userId,
 }: CreateResourceInput) => {
-  if (!title || typeof title !== 'string' || !title.trim()) {
+  if (typeof title !== 'string' || !title.trim()) {
     throw new AppError('Title is required', 400);
   }
 
@@ -20,13 +20,16 @@ export const createResource = async ({
     throw new AppError('Content must be a string', 400);
   }
 
+  const trimmedContent =
+    typeof content === 'string' ? content.trim() : null;
+
   const result = await pool.query(
     `
       INSERT INTO resources (user_id, title, content)
       VALUES ($1, $2, $3)
       RETURNING id, user_id, title, content, created_at, updated_at
     `,
-    [userId, title.trim(), content ?? null]
+    [userId, title.trim(), trimmedContent]
   );
 
   return result.rows[0];

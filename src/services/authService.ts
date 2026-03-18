@@ -23,11 +23,26 @@ export const registerUser = async ({
   email,
   password,
 }: RegisterUserInput): Promise<SafeUser> => {
-  if (!email || !password) {
-    throw new AppError('Email and password are required', 400);
+  if (typeof email !== 'string' || !email.trim()) {
+    throw new AppError('Email is required', 400);
+  }
+
+  if (typeof password !== 'string' || !password.trim()) {
+    throw new AppError('Password is required', 400);
   }
 
   const normalizedEmail = email.trim().toLowerCase();
+  const trimmedPassword = password.trim();
+
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  if (!emailRegex.test(normalizedEmail)) {
+    throw new AppError('Invalid email format', 400);
+  }
+
+  if (trimmedPassword.length < 6) {
+    throw new AppError('Password must be at least 6 characters long', 400);
+  }
 
   const existingUser = await pool.query(
     'SELECT id FROM users WHERE email = $1',
@@ -38,7 +53,7 @@ export const registerUser = async ({
     throw new AppError('User already exists', 409);
   }
 
-  const passwordHash = await bcrypt.hash(password, 10);
+  const passwordHash = await bcrypt.hash(trimmedPassword, 10);
 
   const result = await pool.query(
     `
@@ -56,11 +71,22 @@ export const loginUser = async ({
   email,
   password,
 }: LoginUserInput): Promise<{ token: string; user: SafeUser }> => {
-  if (!email || !password) {
-    throw new AppError('Email and password are required', 400);
+  if (typeof email !== 'string' || !email.trim()) {
+    throw new AppError('Email is required', 400);
+  }
+
+  if (typeof password !== 'string' || !password.trim()) {
+    throw new AppError('Password is required', 400);
   }
 
   const normalizedEmail = email.trim().toLowerCase();
+  const trimmedPassword = password.trim();
+
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  if (!emailRegex.test(normalizedEmail)) {
+    throw new AppError('Invalid email format', 400);
+  }
 
   const result = await pool.query(
     `
@@ -77,7 +103,10 @@ export const loginUser = async ({
 
   const user = result.rows[0];
 
-  const isPasswordValid = await bcrypt.compare(password, user.password_hash);
+  const isPasswordValid = await bcrypt.compare(
+    trimmedPassword,
+    user.password_hash
+  );
 
   if (!isPasswordValid) {
     throw new AppError('Invalid email or password', 401);
@@ -93,7 +122,8 @@ export const loginUser = async ({
     { userId: user.id, email: user.email },
     jwtSecret,
     {
-      expiresIn: (process.env.JWT_EXPIRES_IN || '30d') as SignOptions['expiresIn'],
+      expiresIn: (process.env.JWT_EXPIRES_IN ||
+        '30d') as SignOptions['expiresIn'],
     }
   );
 
