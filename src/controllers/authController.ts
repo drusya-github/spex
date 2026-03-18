@@ -1,25 +1,76 @@
 import { Request, Response } from 'express';
-import { registerUserService } from '../services/authService';
+import { loginUser, registerUser } from '../services/authService';
 
-export const registerUser = async (req: Request, res: Response): Promise<void> => {
+export const register = async (req: Request, res: Response): Promise<void> => {
   try {
     const { email, password } = req.body;
 
-    const user = await registerUserService({ email, password });
+    if (!email || !password) {
+      res.status(400).json({
+        success: false,
+        message: 'Email and password are required',
+      });
+      return;
+    }
+
+    const user = await registerUser({ email, password });
 
     res.status(201).json({
       success: true,
       message: 'User registered successfully',
-      data: {
-        user,
-      },
+      data: { user },
     });
   } catch (error) {
-    console.error('Registration error:', error);
+    const message = error instanceof Error ? error.message : 'Registration failed';
+
+    if (message === 'User already exists') {
+      res.status(409).json({
+        success: false,
+        message,
+      });
+      return;
+    }
 
     res.status(500).json({
       success: false,
-      message: 'Internal server error',
+      message,
+    });
+  }
+};
+
+export const login = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      res.status(400).json({
+        success: false,
+        message: 'Email and password are required',
+      });
+      return;
+    }
+
+    const data = await loginUser({ email, password });
+
+    res.status(200).json({
+      success: true,
+      message: 'Login successful',
+      data,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Login failed';
+
+    if (message === 'Invalid email or password') {
+      res.status(401).json({
+        success: false,
+        message,
+      });
+      return;
+    }
+
+    res.status(500).json({
+      success: false,
+      message,
     });
   }
 };
