@@ -1,22 +1,19 @@
 import { Request, Response } from 'express';
-import { createResource as createResourceService } from '../services/resourceService';
+import { createResource } from '../services/resourceService';
 
-export const createResource = async (req: Request, res: Response): Promise<void> => {
+interface AuthRequest extends Request {
+  user?: {
+    userId: string;
+    email: string;
+  };
+}
+
+export const create = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { title, content } = req.body;
 
-    const userId = (req as Request & { user?: { userId: string } }).user?.userId;
-
-    if (!userId) {
-      res.status(401).json({
-        success: false,
-        message: 'Unauthorized',
-      });
-      return;
-    }
-
-    const resource = await createResourceService({
-      userId,
+    const resource = await createResource({
+      userId: req.user!.userId,
       title,
       content,
     });
@@ -30,10 +27,9 @@ export const createResource = async (req: Request, res: Response): Promise<void>
     });
   } catch (error) {
     console.error('Create resource error:', error);
-
     res.status(500).json({
       success: false,
-      message: 'Failed to create resource',
+      message: 'Internal server error',
     });
   }
 };

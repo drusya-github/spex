@@ -1,10 +1,9 @@
 import { Router } from 'express';
-import { createResource } from '../controllers/resourceController';
+import { create } from '../controllers/resourceController';
 import { protect } from '../middleware/authMiddleware';
-import { validateCreateResource } from '../middleware/validateCreateResource';
 
 const router = Router();
 
-router.post('/', protect, validateCreateResource, createResource);
+router.post('/', protect, create);
 
 export default router;

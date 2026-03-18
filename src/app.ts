@@ -3,6 +3,7 @@ import requestLogger from './middleware/requestLogger';
 import authRoutes from './routes/authRoutes';
 import resourceRoutes from './routes/resourceRoutes';
 
+
 const app = express();
 
 app.use(express.json());
