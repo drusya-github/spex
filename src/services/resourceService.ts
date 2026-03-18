@@ -2,20 +2,16 @@ import pool from '../config/db';
 import AppError from '../utils/AppError';
 
 interface CreateResourceInput {
-  userId: string;
   title: string;
   content?: string;
+  userId: string;
 }
 
 export const createResource = async ({
-  userId,
   title,
   content,
+  userId,
 }: CreateResourceInput) => {
-  if (!userId) {
-    throw new AppError('Unauthorized', 401);
-  }
-
   if (!title || typeof title !== 'string' || !title.trim()) {
     throw new AppError('Title is required', 400);
   }
@@ -34,4 +30,18 @@ export const createResource = async ({
   );
 
   return result.rows[0];
+};
+
+export const getResourcesByUserId = async (userId: string) => {
+  const result = await pool.query(
+    `
+      SELECT id, user_id, title, content, created_at, updated_at
+      FROM resources
+      WHERE user_id = $1
+      ORDER BY created_at DESC
+    `,
+    [userId]
+  );
+
+  return result.rows;
 };

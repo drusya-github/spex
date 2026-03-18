@@ -1,59 +1,100 @@
 import bcrypt from 'bcrypt';
-import * as jwt from 'jsonwebtoken';
+import jwt, { SignOptions } from 'jsonwebtoken';
 import pool from '../config/db';
-import { AppError } from '../utils/AppError';
-
-interface LoginInput {
-  email: string;
-  password: string;
-}
+import AppError from '../utils/AppError';
 
 interface RegisterUserInput {
   email: string;
   password: string;
 }
 
-export const registerUser = async ({ email, password }: RegisterUserInput) => {
-  const hashedPassword = await bcrypt.hash(password, 10);
+interface LoginUserInput {
+  email: string;
+  password: string;
+}
 
-  try {
-    const result = await pool.query(
-      'INSERT INTO users (email, password_hash) VALUES ($1, $2) RETURNING id, email',
-      [email, hashedPassword]
-    );
+interface SafeUser {
+  id: string;
+  email: string;
+  created_at?: string;
+}
 
-    return result.rows[0];
-  } catch (error: any) {
-    if (error.code === '23505') {
-      throw new AppError('Email already exists', 409, 'DUPLICATE_EMAIL');
-    }
-
-    throw error;
+export const registerUser = async ({
+  email,
+  password,
+}: RegisterUserInput): Promise<SafeUser> => {
+  if (!email || !password) {
+    throw new AppError('Email and password are required', 400);
   }
-};
 
-export const loginUser = async ({ email, password }: LoginInput) => {
-  const result = await pool.query(
-    'SELECT id, email, password_hash FROM users WHERE email = $1',
-    [email]
+  const normalizedEmail = email.trim().toLowerCase();
+
+  const existingUser = await pool.query(
+    'SELECT id FROM users WHERE email = $1',
+    [normalizedEmail]
   );
 
-  const user = result.rows[0];
-
-  if (!user) {
-    throw new AppError('Invalid email or password', 401, 'AUTH_ERROR');
+  if (existingUser.rows.length > 0) {
+    throw new AppError('User already exists', 409);
   }
+
+  const passwordHash = await bcrypt.hash(password, 10);
+
+  const result = await pool.query(
+    `
+      INSERT INTO users (email, password_hash)
+      VALUES ($1, $2)
+      RETURNING id, email, created_at
+    `,
+    [normalizedEmail, passwordHash]
+  );
+
+  return result.rows[0];
+};
+
+export const loginUser = async ({
+  email,
+  password,
+}: LoginUserInput): Promise<{ token: string; user: SafeUser }> => {
+  if (!email || !password) {
+    throw new AppError('Email and password are required', 400);
+  }
+
+  const normalizedEmail = email.trim().toLowerCase();
+
+  const result = await pool.query(
+    `
+      SELECT id, email, password_hash, created_at
+      FROM users
+      WHERE email = $1
+    `,
+    [normalizedEmail]
+  );
+
+  if (result.rows.length === 0) {
+    throw new AppError('Invalid email or password', 401);
+  }
+
+  const user = result.rows[0];
 
   const isPasswordValid = await bcrypt.compare(password, user.password_hash);
 
   if (!isPasswordValid) {
-    throw new AppError('Invalid email or password', 401, 'AUTH_ERROR');
+    throw new AppError('Invalid email or password', 401);
+  }
+
+  const jwtSecret = process.env.JWT_SECRET;
+
+  if (!jwtSecret) {
+    throw new Error('JWT_SECRET is not defined');
   }
 
   const token = jwt.sign(
     { userId: user.id, email: user.email },
-    process.env.JWT_SECRET as string,
-    { expiresIn: (process.env.JWT_EXPIRES_IN || '30d') as jwt.SignOptions['expiresIn'] }
+    jwtSecret,
+    {
+      expiresIn: (process.env.JWT_EXPIRES_IN || '30d') as SignOptions['expiresIn'],
+    }
   );
 
   return {
@@ -61,6 +102,24 @@ export const loginUser = async ({ email, password }: LoginInput) => {
     user: {
       id: user.id,
       email: user.email,
+      created_at: user.created_at,
     },
   };
+};
+
+export const getCurrentUser = async (userId: string): Promise<SafeUser> => {
+  const result = await pool.query(
+    `
+      SELECT id, email, created_at
+      FROM users
+      WHERE id = $1
+    `,
+    [userId]
+  );
+
+  if (result.rows.length === 0) {
+    throw new AppError('User not found', 401);
+  }
+
+  return result.rows[0];
 };

@@ -1,25 +1,26 @@
 import { NextFunction, Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
-import { AppError } from '../utils/AppError';
 
-interface JwtPayload {
-  userId: string;
-  email: string;
+interface AuthenticatedRequest extends Request {
+  user?: {
+    userId: string;
+    email: string;
+  };
 }
 
-declare global {
-  namespace Express {
-    interface Request {
-      user?: JwtPayload;
-    }
-  }
-}
-
-const authMiddleware = (req: Request, _res: Response, next: NextFunction): void => {
+const authMiddleware = (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+): void => {
   const authHeader = req.headers.authorization;
 
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return next(new AppError('Unauthorized', 401, 'UNAUTHORIZED'));
+    res.status(401).json({
+      success: false,
+      message: 'Unauthorized',
+    });
+    return;
   }
 
   const token = authHeader.split(' ')[1];
@@ -28,13 +29,21 @@ const authMiddleware = (req: Request, _res: Response, next: NextFunction): void 
     const decoded = jwt.verify(
       token,
       process.env.JWT_SECRET || ''
-    ) as JwtPayload;
+    ) as jwt.JwtPayload & { userId: string; email: string };
 
-    req.user = decoded;
+    req.user = {
+      userId: decoded.userId,
+      email: decoded.email,
+    };
+
     next();
   } catch (_error) {
-    return next(new AppError('Invalid or expired token', 401, 'INVALID_TOKEN'));
+    res.status(401).json({
+      success: false,
+      message: 'Unauthorized',
+    });
   }
 };
 
 export default authMiddleware;
+export type { AuthenticatedRequest };

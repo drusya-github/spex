@@ -1,6 +1,11 @@
 import { NextFunction, Request, Response } from 'express';
-import { registerUser, loginUser } from '../services/authService';
-import { sendSuccess } from '../utils/response';
+import {
+  getCurrentUser,
+  loginUser,
+  registerUser,
+} from '../services/authService';
+import { AuthenticatedRequest } from '../middleware/authMiddleware';
+import AppError from '../utils/AppError';
 
 export const register = async (
   req: Request,
@@ -8,8 +13,15 @@ export const register = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const user = await registerUser(req.body);
-    sendSuccess(res, 201, 'User registered successfully', { user });
+    const { email, password } = req.body;
+
+    const user = await registerUser({ email, password });
+
+    res.status(201).json({
+      success: true,
+      message: 'User registered successfully',
+      data: user,
+    });
   } catch (error) {
     next(error);
   }
@@ -21,8 +33,36 @@ export const login = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const result = await loginUser(req.body);
-    sendSuccess(res, 200, 'Login successful', result);
+    const { email, password } = req.body;
+
+    const result = await loginUser({ email, password });
+
+    res.status(200).json({
+      success: true,
+      message: 'Login successful',
+      data: result,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const me = async (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    if (!req.user?.userId) {
+      throw new AppError('Unauthorized', 401);
+    }
+
+    const user = await getCurrentUser(req.user.userId);
+
+    res.status(200).json({
+      success: true,
+      data: user,
+    });
   } catch (error) {
     next(error);
   }

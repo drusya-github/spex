@@ -1,21 +1,52 @@
-import { NextFunction, Request, Response } from 'express';
-import { createResource } from '../services/resourceService';
-import { sendSuccess } from '../utils/response';
+import { NextFunction, Response } from 'express';
+import { AuthenticatedRequest } from '../middleware/authMiddleware';
+import { createResource, getResourcesByUserId } from '../services/resourceService';
+import AppError from '../utils/AppError';
 
 export const create = async (
-  req: Request,
+  req: AuthenticatedRequest,
   res: Response,
   next: NextFunction
 ): Promise<void> => {
   try {
-    const user = req.user as { userId: string };
+    if (!req.user?.userId) {
+      throw new AppError('Unauthorized', 401);
+    }
+
+    const { title, content } = req.body;
+
     const resource = await createResource({
-      userId: user.userId,
-      title: req.body.title,
-      content: req.body.content,
+      title,
+      content,
+      userId: req.user.userId,
     });
 
-    sendSuccess(res, 201, 'Resource created successfully', { resource });
+    res.status(201).json({
+      success: true,
+      message: 'Resource created successfully',
+      data: resource,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getMyResources = async (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    if (!req.user?.userId) {
+      throw new AppError('Unauthorized', 401);
+    }
+
+    const resources = await getResourcesByUserId(req.user.userId);
+
+    res.status(200).json({
+      success: true,
+      data: resources,
+    });
   } catch (error) {
     next(error);
   }
