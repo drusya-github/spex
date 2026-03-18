@@ -1,5 +1,5 @@
-import { Request, Response, NextFunction } from 'express';
-import { registerUser, loginUser } from '../services/authService';
+import { NextFunction, Request, Response } from 'express';
+import { loginUser, registerUser } from '../services/authService';
 
 export const register = async (
   req: Request,
@@ -7,9 +7,7 @@ export const register = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const { name, email, password } = req.body;
-
-    const user = await registerUser({ name, email, password });
+    const user = await registerUser(req.body);
 
     res.status(201).json({
       success: true,
@@ -29,9 +27,7 @@ export const login = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const { email, password } = req.body;
-
-    const result = await loginUser({ email, password });
+    const result = await loginUser(req.body);
 
     res.status(200).json({
       success: true,
@@ -45,13 +41,20 @@ export const login = async (
 
 export const getCurrentUser = async (
   req: Request,
-  res: Response
+  res: Response,
+  next: NextFunction
 ): Promise<void> => {
-  res.status(200).json({
-    success: true,
-    message: 'Current user fetched successfully',
-    data: {
-      user: req.user,
-    },
-  });
+  try {
+    const user = (req as any).user;
+
+    res.status(200).json({
+      success: true,
+      message: 'Current user fetched successfully',
+      data: {
+        user,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
 };

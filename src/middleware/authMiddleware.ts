@@ -1,36 +1,49 @@
-import { Request, Response, NextFunction } from 'express';
+import { NextFunction, Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
+import AppError from '../utils/AppError';
+
+interface AuthenticatedRequest extends Request {
+  user?: {
+    userId: string;
+    email: string;
+  };
+}
 
 const authMiddleware = (
-  req: Request,
-  res: Response,
+  req: AuthenticatedRequest,
+  _res: Response,
   next: NextFunction
 ): void => {
   try {
     const authHeader = req.headers.authorization;
 
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      res.status(401).json({
-        success: false,
-        message: 'Unauthorized',
-      });
-      return;
+      throw new AppError('Unauthorized', 401);
     }
 
     const token = authHeader.split(' ')[1];
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as {
+    const decoded = jwt.verify(
+      token,
+      process.env.JWT_SECRET as jwt.Secret
+    ) as {
       userId: string;
       email: string;
     };
 
-    req.user = decoded;
+    req.user = {
+      userId: decoded.userId,
+      email: decoded.email,
+    };
+
     next();
   } catch (error) {
-    res.status(401).json({
-      success: false,
-      message: 'Unauthorized',
-    });
+    if (error instanceof AppError) {
+      next(error);
+      return;
+    }
+
+    next(new AppError('Unauthorized', 401));
   }
 };
 

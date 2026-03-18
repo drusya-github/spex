@@ -1,8 +1,5 @@
-import { Request, Response, NextFunction } from 'express';
-import {
-  createResourceForUser,
-  getResourcesByUserId,
-} from '../services/resourceService';
+import { NextFunction, Request, Response } from 'express';
+import { createResource as createResourceService } from '../services/resourceService';
 
 export const createResource = async (
   req: Request,
@@ -10,51 +7,19 @@ export const createResource = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const userId = req.user?.userId;
-    const { title, content } = req.body;
+    const userId = (req as any).user?.userId;
 
-    if (!userId) {
-      res.status(401).json({
-        success: false,
-        message: 'Unauthorized',
-      });
-      return;
-    }
-
-    const resource = await createResourceForUser(userId, title, content);
+    const resource = await createResourceService({
+      userId,
+      ...req.body,
+    });
 
     res.status(201).json({
       success: true,
       message: 'Resource created successfully',
-      data: resource,
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
-export const getResources = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> => {
-  try {
-    const userId = req.user?.userId;
-
-    if (!userId) {
-      res.status(401).json({
-        success: false,
-        message: 'Unauthorized',
-      });
-      return;
-    }
-
-    const resources = await getResourcesByUserId(userId);
-
-    res.status(200).json({
-      success: true,
-      message: 'Resources fetched successfully',
-      data: resources,
+      data: {
+        resource,
+      },
     });
   } catch (error) {
     next(error);
