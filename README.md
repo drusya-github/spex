@@ -52,8 +52,6 @@ These goals directly reflect the take-home requirements.
 - bcrypt
 - dotenv
 
-> The original spec also recommends libraries such as Zod, Winston, Morgan, and pg as part of a production-style implementation.
-
 ---
 
 ## API Endpoints
@@ -136,8 +134,6 @@ JWT_EXPIRES_IN=1h
 NODE_ENV=development
 ```
 
-The spec explicitly expects environment-based configuration for database connection, JWT secret, token expiry, port, and environment mode.
-
 ### 4. Set up the database
 
 Run the schema file against PostgreSQL:
@@ -146,7 +142,6 @@ Run the schema file against PostgreSQL:
 psql "$DATABASE_URL" -f schema.sql
 ```
 
-The spec defines `users` and `resources` tables with UUID primary keys and a foreign key from `resources` to `users`.
 
 ### 5. Start the development server
 
@@ -243,10 +238,6 @@ Security awareness is one of the explicit evaluation areas in the project brief.
 ### Password Hashing
 
 Passwords are hashed before storage and never returned in API responses. The specification explicitly requires that plaintext passwords are never exposed and recommends bcrypt for secure password storage.
-
-### JWT Secret Management
-
-JWT secrets are loaded from environment variables rather than being hardcoded into the codebase. The spec also recommends a strong secret and short-lived tokens.
 
 ### Minimal Token Payload
 
