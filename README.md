@@ -292,19 +292,16 @@ Introduce refresh token rotation and token revocation to improve session managem
 
 Apply rate limiting to authentication endpoints to reduce brute-force risk.
 
-### 5. Add Security Headers
 
-Use middleware such as `helmet` and configure CORS explicitly for allowed origins.
-
-### 6. Add Pagination and Filtering
+### 5. Add Pagination and Filtering
 
 The resource listing endpoint could be improved with pagination, sorting, and filtering for better scalability and query clarity.
 
-### 7. Improve Logging and Observability
+### 6. Improve Logging and Observability
 
 Add structured logging, monitoring, and request tracing for better debugging and production support.
 
-### 8. Add Roles or Authorization Extensions
+### 7. Add Roles or Authorization Extensions
 
 If the project grew, role-based access control would make the authorization layer more flexible.
 
